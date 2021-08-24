@@ -10,6 +10,10 @@ import Vueaxios from 'vue-axios'
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 
+import global_msg from './global.js'   //注意文件路径，实际路径以项目目录结构为准
+Vue.prototype.$global_msg = global_msg;
+
+
 Vue.use(ElementUI);
 
 Vue.use(Vueaxios, axios);
