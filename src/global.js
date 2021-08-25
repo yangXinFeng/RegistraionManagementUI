@@ -1,4 +1,4 @@
-const host = '116.56.138.144:9090';
+const host = '127.0.0.1:9090';//'116.56.138.144:9090';
 const project = 'registration';
 const url = 'http://'+host+'/'+project;
 const token = 'abcdefg123456';

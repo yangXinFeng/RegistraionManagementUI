@@ -2,22 +2,38 @@
   <div>
     <el-calendar>
       <template slot="dateCell" slot-scope="{date, data}" class="calItem" >
-        <div  @mouseover="hover(date,data)" @mouseleave="unhover(data)" :class="{ active: data.isSelected }">
+        <div  @click="formData.data = data.day" :class="{ active: data.isSelected }">
 <!--          <div class="dayItem">{{ data.day.split('-').slice(2).join('-') }}</div>-->
 
-          <p class="dayItem"  v-if="data.day.substr(-2) < 10">{{ data.day.substr(-1)}}</p>
-          <p class="dayItem"  v-else>{{ data.day.substr(-2)}}</p>
-          <div v-for="(item,index) in calendarData" :key="index">
-            <div v-if="(item.years).indexOf(data.day.split('-').slice(0)[0])!=-1
-            && (item.months).indexOf(data.day.split('-').slice(1)[0])!=-1
-            && (item.days).indexOf(data.day.split('-').slice(2).join('-'))!=-1">
-              <el-tooltip :content="item.things" placement="right">
-                <div class="mark">{{item.things}}</div>
-              </el-tooltip>
-            </div>
-            <div v-else></div>
-          </div>
-          <p class="addBtn" v-show="data.isSelected" @click="dialogVisible = true">添加日程</p>
+          <el-row :gutter="10" >
+            <el-col :span="8" style="text-align: center">
+              <p class="dayItem"  v-if="data.day.substr(-2) < 10">{{ data.day.substr(-1)}}</p>
+              <p class="dayItem"  v-else>{{ data.day.substr(-2)}}</p>
+
+            </el-col>
+            <el-col :span="16" style="text-align: right" >
+              <div v-for="(item,index) in calendarData" :key="index" v-show="!data.isSelected">
+                <div v-if="(item.years)==(data.day.split('-').slice(0)[0])
+                  && (item.months)==(data.day.split('-').slice(1)[0])
+                  && (item.days)==(data.day.split('-').slice(2).join('-'))">
+                  <!--              <el-tooltip  placement="bottom-start">-->
+                  <div style = "position:relative;right: 0;top:0">
+                    <div class="mark" v-if="item.schedule[0]!=0">上午：{{item.available[0]}}/{{item.schedule[0]}}</div>
+                    <div class="mark" v-if="item.schedule[1]!=0">下午：{{item.available[1]}}/{{item.schedule[1]}}</div>
+                  </div>
+                  <!--              </el-tooltip>-->
+                </div>
+                <div v-else></div>
+              </div>
+
+              <div v-show="data.isSelected">
+                <i class="el-icon-circle-plus-outline" style="font-size: 50px;color: rgba(0, 200, 156, 1)" @click="dialogVisible = true"/>
+                <i class="el-icon-s-custom" style="font-size: 50px;color: rgba(0, 200, 156, 1)" @click="dialogVisible2 = true" />
+              </div>
+            </el-col>
+          </el-row>
+
+
         </div>
       </template>
     </el-calendar>
@@ -27,8 +43,11 @@
       width="30%"
       :before-close="handleClose">
       <el-form @submit.native.prevent>
-        <el-form-item label="日程">
-          <el-input v-model="formData.content"></el-input>
+        <el-form-item label="上午">
+          <el-input v-model="formData.num1"></el-input>
+        </el-form-item>
+        <el-form-item label="下午">
+          <el-input v-model="formData.num2"></el-input>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
@@ -40,58 +59,94 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
   name: "schedule",
+  // props:{
+  //   "doctorId": 1,
+  // },
   data(){
     return {
       formData:{
         data:'',
-        content: ''
+        num1: 0,
+        num2: 0,
       },
+      doctorId: 1,
       isHover: new Array(32).fill(false),
       dialogVisible: false,
       calendarData: [
-        { years: ['2021'], months: ['08', '11'],days: ['14'],things: '杂志' },
-        { years: ['2021'], months: ['10', '11'], days: ['02'],things: '演唱会' },
-        { years: ['2021'], months: ['11'], days: ['02'],things: '晚会' },
-        { years: ['2021'], months: ['11'], days: ['02'],things: '杂志预售' },
-        { years: ['2021'], months: ['07'], days: ['15'],things: '重启开播' }
+        { years: ['2021'], months: ['08'],days: ['14'],schedule: [6,7,0],available:[1,1,0] },
+        { years: ['2021'], months: ['10'], days: ['02'],schedule: [6,4,0],available:[0,1,0]},
+        { years: ['2021'], months: ['11'], days: ['02'],schedule: [1,3,0],available:[0,2,0] },
+        { years: ['2021'], months: ['11'], days: ['02'],schedule: [5,8,0],available:[4,1,0] },
+        { years: ['2021'], months: ['07'], days: ['15'],schedule: [2,3,0],available:[1,1,0] }
       ],
       value: new Date(),
     }
   },
   methods: {
-    calClick(item){
-      console.log(item)
-      this.formData.data = item.day
-    },
+
     handleClose(done){
       done()
     },
     add(){
-      var date = this.formData.data.split('-')
+      var date = this.formData.data.split('-');
       var a =  {
         years: [date[0]],
         months: [date[1]],
         days: [date[2]],
-        things: this.formData.content }
-      this.calendarData.push(a)
+        schedule: [this.formData.num1,this.formData.num2,0],
+        available: new Array(3).fill(0),
+      };
+
+      axios.get(this.$global_msg.url+"/setSchedule/"+this.doctorId+"/"+new Date(this.formData.data).getTime()+"/"+
+        this.formData.num1+"/"+this.formData.num2).then( (response)=>{
+        console.log(response);
+        if(response.data == 1) {
+          var exit = false;
+          for(var i=0;i<this.calendarData.length;i++){
+            var item = this.calendarData[i];
+            if(item.years == a.years && item.months == a.months && item.days == a.days){
+              item = a;
+              exit = true;
+            }
+          }
+          if(!exit) this.calendarData.push(a);
+          alert("发布成功！");
+        }else alert("发布失败！");
+      },function (err){
+        console.log(err);
+      })
     },
-    hover(date,data){
-      console.log(date);
-      console.log(data);
-      this.formData.data = data.day;
-      this.isHover[data.day.substr(-2)] = true;
-      console.log(this.isHover[data.day.substr(-2)]);
-    },
-    unhover(data){
-      this.isHover[data.day.substr(-2)] = false;
-      console.log(this.isHover[data.day.substr(-2)]);
+
+    getSchedule(){
+      console.log('enter getSchedule method');
+       axios.get(this.$global_msg.url+"/getSchedules/"+this.doctorId+"/"+this.value.getTime()).then( (response)=>{
+         console.log(response);
+         this.calendarData = response.data;
+       },function (err){
+         console.log(err);
+       })
     }
-  }
+  },
+  mounted:function(){
+    console.log('mounted');
+    this.getSchedule();
+  },
 }
 </script>
 <style scoped>
+.el-row {
+  z-index: 1;
+  margin-bottom: 20px;
+&:last-child {
+   z-index: 1;
+   margin-bottom: 0;
+ }
+}
+
 .calendar-day{
   text-align: center;
   color: #202535;
@@ -99,12 +154,13 @@ export default {
   font-size: 12px;
 }
 .active{
-  color: #999999;
+  /*background-color: #999999;*/
 }
 .mark{
-  padding: 8px 8px 0 8px;
+  /*padding: 8px 8px 0 8px;*/
   color: #F8A535;
   z-index: -1;
+  font-size: smaller;
 
 }
 #calendar .el-button-group>.el-button:not(:first-child):not(:last-child):after{
@@ -123,7 +179,7 @@ export default {
 } */
 .addBtn{
   /*position: absolute;*/
-  /*z-index: 99;*/
+  z-index: 99;
   /*display: block;*/
   /*width: 65px;*/
   /*height: 20px;*/
@@ -144,12 +200,12 @@ export default {
 <style>
 .dayItem{
   font-size: 35px;
-  position: absolute;
+  /*position: absolute;*/
   /*width: 100%;*/
   /*height: 85px;*/
   text-align: center;
-  line-height: 85px;
-  margin: 0;
+  /*line-height: 85px;*/
+  /*margin: 0;*/
   z-index: 1;
 }
 .current .dayItem{
