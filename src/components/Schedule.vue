@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-calendar>
+    <el-calendar @date-change="change">
       <template slot="dateCell" slot-scope="{date, data}" class="calItem" >
         <div  @click="formData.data = data.day" :class="{ active: data.isSelected }">
 <!--          <div class="dayItem">{{ data.day.split('-').slice(2).join('-') }}</div>-->
@@ -28,7 +28,7 @@
 
               <div v-show="data.isSelected">
                 <i class="el-icon-circle-plus-outline" style="font-size: 50px;color: rgba(0, 200, 156, 1)" @click="dialogVisible = true"/>
-                <i class="el-icon-s-custom" style="font-size: 50px;color: rgba(0, 200, 156, 1)" @click="dialogVisible2 = true" />
+                <i class="el-icon-s-custom" style="font-size: 50px;color: rgba(0, 200, 156, 1)" @click="getPatientRecord" />
               </div>
             </el-col>
           </el-row>
@@ -37,6 +37,7 @@
         </div>
       </template>
     </el-calendar>
+
     <el-dialog
       :title="formData.data"
       :visible.sync="dialogVisible"
@@ -51,9 +52,40 @@
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-                <el-button @click="dialogVisible = false">取 消</el-button>
-                <el-button type="primary" @click="dialogVisible = false;add()">确 定</el-button>
-            </span>
+          <el-button @click="dialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="dialogVisible = false;add()">确 定</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog
+      :title="formData.data"
+      :visible.sync="dialogVisible2"
+      width="30%"
+      :before-close="handleClose">
+      <template>
+        <el-table
+          :data="tableData"
+          style="width: 100%">
+          <el-table-column
+            prop="workTime"
+            label="时段"
+            width="70">
+          </el-table-column>
+          <el-table-column
+            prop="name"
+            label="姓名"
+            width="100">
+          </el-table-column>
+          <el-table-column
+            prop="phone"
+            label="电话">
+          </el-table-column>
+        </el-table>
+      </template>
+
+      <span slot="footer" class="dialog-footer">
+          <el-button @click="dialogVisible2 = false">确定</el-button>
+      </span>
     </el-dialog>
   </div>
 </template>
@@ -76,14 +108,33 @@ export default {
       doctorId: 1,
       isHover: new Array(32).fill(false),
       dialogVisible: false,
+      dialogVisible2: false,
       calendarData: [
-        { years: ['2021'], months: ['08'],days: ['14'],schedule: [6,7,0],available:[1,1,0] },
-        { years: ['2021'], months: ['10'], days: ['02'],schedule: [6,4,0],available:[0,1,0]},
-        { years: ['2021'], months: ['11'], days: ['02'],schedule: [1,3,0],available:[0,2,0] },
-        { years: ['2021'], months: ['11'], days: ['02'],schedule: [5,8,0],available:[4,1,0] },
-        { years: ['2021'], months: ['07'], days: ['15'],schedule: [2,3,0],available:[1,1,0] }
+        { years: 2021, months: 8,days: 14,schedule: [6,7,0],available:[1,1,0] },
+        { years: 2021, months: 10, days: 2,schedule: [6,4,0],available:[0,1,0]},
+        { years: 2021, months: 11, days: 2,schedule: [1,3,0],available:[0,2,0] },
+        { years: 2021, months: 11, days: 2,schedule: [5,8,0],available:[4,1,0] },
+        { years: 2021, months: 7, days: 15,schedule: [2,3,0],available:[1,1,0] }
       ],
+      tableData: [{
+        workTime: '上午',
+        name: '王小虎',
+        phone: '18302006780'
+      }, {
+        workTime: '上午',
+        name: '王小虎',
+        phone: '18302006780'
+      }, {
+        workTime: '下午',
+        name: '王小虎',
+        phone: '18302006780'
+      }, {
+        workTime: '下午',
+        name: '王小虎',
+        phone: '18302006780'
+      }],
       value: new Date(),
+      showDate: new Date(),
     }
   },
   methods: {
@@ -123,18 +174,57 @@ export default {
 
     getSchedule(){
       console.log('enter getSchedule method');
-       axios.get(this.$global_msg.url+"/getSchedules/"+this.doctorId+"/"+this.value.getTime()).then( (response)=>{
+       axios.get(this.$global_msg.url+"/getSchedules/"+this.doctorId+"/"+this.showDate.getTime()).then( (response)=>{
          console.log(response);
          this.calendarData = response.data;
+         // console.log(this.calendarData[0]);
        },function (err){
          console.log(err);
        })
+    },
+    change(data){
+      console.log(data);
+    },
+
+    getPatientRecord(){
+      console.log('enter getSchedule method');
+      axios.get(this.$global_msg.url+"/getReigsterPatients/"+this.doctorId+"/"+new Date(this.formData.data).getTime()).then( (response)=>{
+        console.log(response);
+        this.tableData = response.data;
+      },function (err){
+        console.log(err);
+      })
+      this.dialogVisible2 = true;
     }
   },
   mounted:function(){
     console.log('mounted');
     this.getSchedule();
   },
+  created: function() {
+    this.$nextTick(() => {
+      // 点击前一个月
+      let prevBtn = document.querySelector(
+        ".el-calendar__button-group .el-button-group>button:nth-child(1)"
+      );
+      prevBtn.addEventListener("click", e => {
+        this.showDate.setMonth(this.showDate.getMonth()-1);
+        console.log(this.showDate);
+        this.getSchedule();
+      });
+
+      //点击下一个月
+      let nextBtn = document.querySelector(
+        ".el-calendar__button-group .el-button-group>button:nth-child(3)"
+      );
+      nextBtn.addEventListener("click", () => {
+        this.showDate.setMonth(this.showDate.getMonth()+1);
+        console.log(this.showDate);
+        this.getSchedule();
+      });
+    })
+  }
+
 }
 </script>
 <style scoped>
