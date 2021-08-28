@@ -39,14 +39,68 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
   name: "DoctorList",
-  props: ['part-code','date','doctors'],
+  props: ['partCode','showDate'],
   data() {
     return {
       colNum: 4,
 
+      doctors: [{
+        id:1,
+        name:'钟世镇',
+        info:'院士，呼吸病领域专家',
+        price:'100',
+        image:"zhongshizhen.png",
+        availableRegister:[5,8]
+      },
+        {
+          id:2,
+          name:'钟南山',
+          info:'院士，呼吸病领域专家',
+          price:'100',
+          image:'zhongnanshan.png',
+          availableRegister:[1,1]
 
+        },
+        {
+          id:3,
+          name:'高兴林',
+          info:'教授，呼吸病领域专家',
+          price:'80',
+          image:'gaoxinglin.png',
+          availableRegister:[5,2]
+
+        },
+        {
+          id:4,
+          name:'钟世镇',
+          info:'院士，呼吸病领域专家',
+          price:'100',
+          image:'zhongshizhen.png',
+          availableRegister:[5,8]
+
+        },
+        {
+          id:5,
+          name:'钟南山',
+          info:'院士，呼吸病领域专家',
+          price:'100',
+          image:'zhongnanshan.png',
+          availableRegister:[5,8]
+
+        },
+        {
+          id:6,
+          name:'高兴林',
+          info:'教授，呼吸病领域专家',
+          price:'80',
+          image:'gaoxinglin.png',
+          availableRegister:[5,8]
+
+        }],
     };
   },
   methods:{
@@ -86,6 +140,17 @@ export default {
         });
       });
     },
+
+    getDoctors(){
+      axios.get(this.$global_msg.url+"/getdoctors/"+this.partCode+"/"+
+        this.showDate.getTime()).then( (response)=>{
+        console.log(response);
+        this.doctors = response.data;
+      },function (err){
+        console.log(err);
+      })
+    },
+
   },
   computed:{
     pages () {
@@ -99,6 +164,22 @@ export default {
       })
       return pages
     }
+  },
+
+  mounted:function(){
+    console.log('DoctorList mounted');
+    // this.getDoctors();
+  },
+
+  watch: {
+    partCode(val, oldVal) {//普通的watch监听
+      console.log("a: " + val, oldVal);
+      this.getDoctors();
+    },
+    showDate(val, oldVal) {//普通的watch监听
+      console.log("a: " + val, oldVal);
+      this.getDoctors();
+    },
   }
 }
 </script>

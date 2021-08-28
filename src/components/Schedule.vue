@@ -95,9 +95,7 @@ import axios from "axios";
 
 export default {
   name: "schedule",
-  // props:{
-  //   "doctorId": 1,
-  // },
+  props:['doctorId'],
   data(){
     return {
       formData:{
@@ -105,7 +103,7 @@ export default {
         num1: 0,
         num2: 0,
       },
-      doctorId: 1,
+      // doctorId: 1,
       isHover: new Array(32).fill(false),
       dialogVisible: false,
       dialogVisible2: false,
